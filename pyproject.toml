@@ -1,12 +1,12 @@
 [tool.poetry]
-name = "sample-project"
+name = "mpv-discord-rpc"
 version = "0.1.0"
-description = ""
-authors = ["Author Name <author@example.com>"]
+description = "Discord Rich Presence from mpv's JSON IPC"
+authors = ["Virinas-code <alexcode228@gmail.com>"]
 # readme = "README.md"
 # license = "BSD"
 packages = [
-  { include = "sample_package" }
+  { include = "mpv_discord_rpc" }
 ]
 
 [tool.poetry.dependencies]
@@ -18,7 +18,7 @@ requests = "^2.32.4"
 name = "mpv-discord-rpc"
 
 [project.scripts]
-mpv_discord_rpc = 'sample_package:main'
+mpv_discord_rpc = 'mpv_discord_rpc:main'
 
 [build-system]
 requires = ["poetry-core"]
