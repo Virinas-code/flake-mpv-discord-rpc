@@ -16,6 +16,7 @@ async def run() -> None:
     async with connect("ws://127.0.0.1:6463", ping_timeout=None) as websocket:
         dispatch = await websocket.recv()
         print(dispatch)
+
         music_name = "Loading..."
         music_artist = "Loading..."
         music_album = "Loading..."
@@ -29,7 +30,10 @@ async def run() -> None:
         mpv_version = "?"
         cover_url = ""
 
-        request_id = 0
+        fields_set: list[str] = []
+        fields_waiting: list[str] = []
+        fields_sent: bool = False
+
         requests_ids = {
             "media-title": 0,
             "playlist/count": 0,
@@ -98,32 +102,23 @@ async def run() -> None:
                 }
             )
 
-            data = b""
-            char = b""
-            while char != b"\n":
-                char = mpv_socket.recv(1)
-                data += char
-                if char == "":
-                    break
-            parsed = json.loads(data)
-            print(parsed)
-            if parsed.get("event", "") == "file-loaded":
-                request_id = secrets.randbelow(2**16)
-                mpv_socket.send(
-                    (
-                        json.dumps(
-                            {
-                                "command": [
-                                    "get_property",
-                                    "media-title",
-                                    "playlist/count",
-                                ],
-                                "request_id": request_id,
-                            }
-                        )
-                        + "\n"
-                    ).encode()
-                )
+            parsed = {}
+            if fields_sent or fields_waiting:
+                data = b""
+                char = b""
+                while char != b"\n":
+                    char = mpv_socket.recv(1)
+                    data += char
+                    if char == "":
+                        break
+                parsed = json.loads(data)
+                print(parsed)
+
+            if parsed.get("event", "") == "file-loaded" or (
+                fields_set == [] and fields_waiting == []
+            ):
+                fields_set = []
+                fields_sent = False
                 for property_name in requests_ids:
                     requests_ids[property_name] = secrets.randbelow(2**16)
                     mpv_socket.send(
@@ -137,6 +132,7 @@ async def run() -> None:
                             + "\n"
                         ).encode()
                     )
+                    fields_waiting.append(property_name)
             elif parsed.get("request_id", -1) in requests_ids.values():
                 key = next(
                     key
@@ -146,10 +142,7 @@ async def run() -> None:
                 if "error" in parsed and parsed["error"] != "success":
                     print(f"whoopsie {parsed['error']} for {key}")
 
-                    if key == "metadata/by-key/Album":
-                        music_album = ""
-
-                    continue
+                    parsed["data"] = ""
                 print(f"FOUND {parsed['data']}")
                 if key == "media-title":
                     music_name = parsed["data"]
@@ -287,10 +280,16 @@ async def run() -> None:
                     playlist_path = parsed["data"]
                 elif key == "mpv-version":
                     mpv_version = parsed["data"]
-            elif parsed.get("event", "") == "playback-restart":
+                fields_waiting.remove(key)
+                fields_set.append(key)
+
+            if len(fields_set) == len(requests_ids) and not fields_sent:
                 await websocket.send(activity_data)
                 answer = await websocket.recv()
                 print(answer)
+                fields_sent = True
+
+            print(f"{fields_waiting=} {fields_set=} {fields_sent=}")
 
 
 def main():
