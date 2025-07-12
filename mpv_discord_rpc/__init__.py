@@ -86,7 +86,9 @@ async def run() -> None:
                             "flags": 0,  # IDK tbh
                             "buttons": [
                                 {
-                                    "label": "Listen on YouTube",
+                                    "label": "Listen on YouTube"
+                                    if "youtube" in music_url
+                                    else "Listen online",
                                     "url": music_url,
                                 },
                             ],
