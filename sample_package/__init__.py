@@ -29,6 +29,8 @@ async def run() -> None:
         mpv_version = "?"
         cover_url = ""
 
+        first_run: bool = False
+
         request_id = 0
         requests_ids = {
             "media-title": 0,
@@ -105,7 +107,7 @@ async def run() -> None:
                     break
             parsed = json.loads(data)
             print(parsed)
-            if parsed.get("event", "") == "file-loaded":
+            if parsed.get("event", "") == "file-loaded" or first_run:
                 request_id = secrets.randbelow(2**16)
                 mpv_socket.send(
                     (
@@ -135,7 +137,7 @@ async def run() -> None:
                             + "\n"
                         ).encode()
                     )
-            elif parsed.get("request_id", -1) in requests_ids.values():
+            if parsed.get("request_id", -1) in requests_ids.values():
                 key = next(
                     key
                     for key, value in requests_ids.items()
@@ -285,10 +287,11 @@ async def run() -> None:
                     playlist_path = parsed["data"]
                 elif key == "mpv-version":
                     mpv_version = parsed["data"]
-            elif parsed.get("event", "") == "playback-restart":
+            if parsed.get("event", "") == "playback-restart" or first_run:
                 await websocket.send(activity_data)
                 answer = await websocket.recv()
                 print(answer)
+                first_run = False
 
 
 def main():
