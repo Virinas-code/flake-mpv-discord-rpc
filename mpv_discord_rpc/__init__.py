@@ -38,11 +38,20 @@ class MpvDiscordRpc:
         """In milliseconds"""
         self._requests: int = 0
         """Total requests count, increased every request"""
+        self._first_run: bool = False
+        self._was_paused: bool = False
 
     async def mainloop(self) -> None:
+        if not self._first_run:
+            self.update_mpv()
+            self._first_run = True
         while True:
             start_time: float = time.time()
             """Time where this tick was started"""
+            self.test_paused()
+            if self._was_paused:
+                self.update_mpv()
+                self._was_paused = False
             await self.update_discord()
             ready: list[socket.socket] = select.select([self._socket], [], [], 5)[0]
             if ready:
@@ -55,7 +64,7 @@ class MpvDiscordRpc:
             if raw:
                 data: dict = json.loads(raw)
                 print("->", data)
-                if "event" in data and data["event"] == "file-loaded":
+                if "event" in data and data["event"] == "audio-reconfig":
                     self.update_mpv()
 
     def update_mpv(self) -> None:
@@ -73,7 +82,11 @@ class MpvDiscordRpc:
         self.cover = self.get_cover()
         self.album = self.mpv_request("metadata/by-key/Album", str)
         self.version = self.mpv_request("mpv-version", str)
-        # self.paused = ?
+
+    def test_paused(self) -> None:
+        if self.paused:
+            self._was_paused = True
+        self.paused = self.mpv_request("core-idle", bool) or False
 
     def get_cover(self) -> str | None:
         if self.url is None:
@@ -84,24 +97,28 @@ class MpvDiscordRpc:
             return None
 
     def mpv_request[V](self, field: str, expected_type: Type[V]) -> V | None:
-        self._socket.send(
-            (
-                json.dumps(
-                    {
-                        "command": ["get_property", field],
-                        "request_id": self._requests,
-                    }
-                )
-                + "\n"
-            ).encode()
-        )
+        payload: bytes = (
+            json.dumps(
+                {
+                    "command": ["get_property", field],
+                    "request_id": self._requests,
+                }
+            )
+            + "\n"
+        ).encode()
+        print("<-", payload)
+        self._socket.send(payload)
         request_id: int = -1
         data: dict = {"data": None}
         while request_id != self._requests:
-            data = json.loads(self._socket.recv(2**16))
-            print("->", data)
-            if "request_id" in data:
-                request_id = data["request_id"]
+            events = self._socket.recv(2**16).split(b"\n")
+            for event in events:
+                if not event:
+                    continue
+                data = json.loads(event)
+                print("->", data)
+                if "request_id" in data:
+                    request_id = data["request_id"]
         if "error" in data and data["error"] != "success":
             return None
         self._requests += 1
@@ -143,16 +160,23 @@ class MpvDiscordRpc:
                         "match": secrets.token_hex(20),
                     },
                     "flags": 0,  # IDK tbh
-                    "buttons": [{}],
                 },
             },
             "nonce": str(uuid.uuid4()),
         }
+        buttons: list[dict] = []
+        if self.paused:
+            buttons.append(
+                {
+                    "label": "Paused",
+                    "url": "#",
+                }
+            )
         if self.pid:
             activity_data["args"]["pid"] = self.pid
         if self.url:
             activity_data["args"]["activity"]["url"] = self.url
-            activity_data["args"]["activity"]["buttons"].append(
+            buttons.append(
                 {
                     "label": (
                         "Listen on YouTube"
@@ -162,9 +186,9 @@ class MpvDiscordRpc:
                     "url": self.url,
                 }
             )
-        if self.start:
+        if not self.paused and self.start:
             activity_data["args"]["activity"]["timestamps"]["start"] = self.start
-        if self.end:
+        if not self.paused and self.end:
             activity_data["args"]["activity"]["timestamps"]["end"] = self.end
         if self.name:
             activity_data["args"]["activity"]["details"] = self.name
@@ -183,13 +207,8 @@ class MpvDiscordRpc:
             activity_data["args"]["activity"]["assets"]["large_text"] = self.album
         if self.version:
             activity_data["args"]["activity"]["assets"]["small_text"] = self.version
-        if self.paused:
-            activity_data["args"]["activity"]["buttons"].append(
-                {
-                    "label": "Paused",
-                    "url": "#",
-                }
-            )
+        if buttons:
+            activity_data["args"]["activity"]["buttons"] = buttons
 
         activity_json: str = json.dumps(activity_data)
         print("<", activity_json)

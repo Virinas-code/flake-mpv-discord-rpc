@@ -6,7 +6,7 @@ import requests
 def yt_music_cover(ytb_url: str) -> str:
     ytid = ytb_url.split("?v=")[-1]
     try:
-        return requests.post(
+        raw = requests.post(
             "https://music.youtube.com/youtubei/v1/player?prettyPrint=false",
             json={
                 "videoId": ytid,
@@ -14,33 +14,33 @@ def yt_music_cover(ytb_url: str) -> str:
                     "client": {
                         "hl": "fr",
                         "gl": "FR",
-                        "remoteHost": "2a01:e0a:5e7:9340:d90f:a928:c59a:e986",
+                        "remoteHost": "2a01:e0a:5e7:9340:2023:1b0e:57d0:c3f2",
                         "deviceMake": "",
                         "deviceModel": "",
-                        "visitorData": "CgtzMlY0LWY5azFVdyj0w8bDBjInCgJGUhIhEh0SGwsMDg8QERITFBUWFxgZGhscHR4fICEiIyQlJiAh",
+                        "visitorData": "CgtzMlY0LWY5azFVdyjtsrXEBjInCgJGUhIhEh0SGwsMDg8QERITFBUWFxgZGhscHR4fICEiIyQlJiAh",
                         "userAgent": "Mozilla/5.0 (X11; Linux x86_64; rv:140.0) Gecko/20100101 Firefox/140.0,gzip(gfe)",
                         "clientName": "WEB_REMIX",
-                        "clientVersion": "1.20250709.03.01",
+                        "clientVersion": "1.20250730.03.00",
                         "osName": "X11",
                         "osVersion": "",
                         "originalUrl": "https://music.youtube.com/",
                         "platform": "DESKTOP",
                         "clientFormFactor": "UNKNOWN_FORM_FACTOR",
                         "configInfo": {
-                            "appInstallData": "CPTDxsMGEIuvzxwQvYqwBRCQvM8cELfq_hIQmZixBRDlrs8cEParsAUQ4riwBRDM364FEMvAzxwQiZeAExCqnc8cEJT-sAUQ8J3PHBD2us8cELWwzxwQpLbPHBCJsM4cELnZzhwQn6HPHBCwhs8cELjkzhwQvbauBRDa984cEMn3rwUQ_LLOHBDevM4cEIqCgBMQiIewBRCXtc8cELvZzhwQ4OD_EhCBzc4cEJ7QsAUQhsDPHBCZjbEFEMW7zxwQ8OLOHBCThs8cEL2czxwQ0rbPHBCYuc8cENPhrwUQvZmwBRCCoM8cEIjjrwUQ6rvPHBDuoM8cENeczxwQh6zOHBCAl88cEP6OzxwqKENBTVNHaFVSb0wyd0ROSGtCdUhkaFFyTDNBNnZpQWF2MndhTldoMEg%3D",
-                            "coldConfigData": "CPXDxsMGGjJBT2pGb3gxTUVZZDVGamlyZThUVXphT3l6QlZXd3l4SnRmUGE3TlQxUG5seEphOUZ5QSIyQU9qRm94MTVvbDJlSHJVc3lnTDFvb002YXF0czJyVGdJcXQxSTd0cThvNmppbnUyZmc%3D",
-                            "coldHashData": "CPXDxsMGEhM4MzcyMjg4Nzg1MDY2MDg0NzkyGPXDxsMGMjJBT2pGb3gxTUVZZDVGamlyZThUVXphT3l6QlZXd3l4SnRmUGE3TlQxUG5seEphOUZ5QToyQU9qRm94MTVvbDJlSHJVc3lnTDFvb002YXF0czJyVGdJcXQxSTd0cThvNmppbnUyZmc%3D",
-                            "hotHashData": "CPXDxsMGEhM0ODM0MDgxNTExNDAyNjgwMTA2GPXDxsMGMjJBT2pGb3gxTUVZZDVGamlyZThUVXphT3l6QlZXd3l4SnRmUGE3TlQxUG5seEphOUZ5QToyQU9qRm94MTVvbDJlSHJVc3lnTDFvb002YXF0czJyVGdJcXQxSTd0cThvNmppbnUyZmc%3D",
+                            "appInstallData": "CO2ytcQGELjkzhwQsIbPHBDiuLAFELbWzxwQr9fPHBCZmLEFEImXgBMQrtbPHBCc188cEMXDzxwQudnOHBDFy88cEJbWzxwQu9nOHBDv1M8cEMzAzxwQzN-uBRD92M8cEM6szxwQiIewBRDw4s4cEKiZgBMQvZmwBRDa984cEJOGzxwQ8sTPHBC9irAFEL22rgUQmLnPHBDiys8cEIHNzhwQ9quwBRDT4a8FEKHXzxwQhtnPHBD9zs8cEObJzxwQh6zOHBCJsM4cEJmNsQUQntCwBRD8ss4cEMn3rwUQ8djPHBCKgoATEPbLzxwQt-r-EhDwnc8cEL3ZzxwQ3rzOHBDjvs8cEJT-sAUQqp3PHBCAl88cEKfSzxwQ_o7PHCosQ0FNU0d4VVFvTDJ3RE5Ia0J1SGRoUXFCbFEweXYxX3AxUVVEem53ZEJ3PT0%3D",
+                            "coldConfigData": "CO2ytcQGGjJBT2pGb3gxTUVZZDVGamlyZThUVXphT3l6QlZXd3l4SnRmUGE3TlQxUG5seEphOUZ5QSIyQU9qRm94MTVvbDJlSHJVc3lnTDFvb002YXF0czJyVGdJcXQxSTd0cThvNmppbnUyZmc%3D",
+                            "coldHashData": "CO2ytcQGEhM4MzcyMjg4Nzg1MDY2MDg0NzkyGO2ytcQGMjJBT2pGb3gxTUVZZDVGamlyZThUVXphT3l6QlZXd3l4SnRmUGE3TlQxUG5seEphOUZ5QToyQU9qRm94MTVvbDJlSHJVc3lnTDFvb002YXF0czJyVGdJcXQxSTd0cThvNmppbnUyZmc%3D",
+                            "hotHashData": "CO2ytcQGEhM0ODM0MDgxNTExNDAyNjgwMTA2GO2ytcQGMjJBT2pGb3gxTUVZZDVGamlyZThUVXphT3l6QlZXd3l4SnRmUGE3TlQxUG5seEphOUZ5QToyQU9qRm94MTVvbDJlSHJVc3lnTDFvb002YXF0czJyVGdJcXQxSTd0cThvNmppbnUyZmc%3D",
                         },
                         "userInterfaceTheme": "USER_INTERFACE_THEME_DARK",
                         "timeZone": "Europe/Paris",
                         "browserName": "Firefox",
                         "browserVersion": "140.0",
                         "acceptHeader": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-                        "deviceExperimentId": "ChxOelV5TlRrM05EVXlNVFkzTkRjNU5Ua3dNQT09EPTDxsMGGPTDxsMG",
-                        "rolloutToken": "CJzO7rat4OzVygEQr4uzyPbXjQMY_OSAup21jgM%3D",
-                        "screenWidthPoints": 1349,
-                        "screenHeightPoints": 617,
+                        "deviceExperimentId": "ChxOelV6TXpjM05qQTNOalU0TVRnNU56UTJOZz09EO2ytcQGGO2ytcQG",
+                        "rolloutToken": "CJzO7rat4OzVygEQr4uzyPbXjQMY8pCZ6qrpjgM%3D",
+                        "screenWidthPoints": 1600,
+                        "screenHeightPoints": 525,
                         "screenPixelDensity": 1,
                         "screenDensityFloat": 1,
                         "utcOffsetMinutes": 120,
@@ -53,17 +53,17 @@ def yt_music_cover(ytb_url: str) -> str:
                     "user": {"lockedSafetyMode": False},
                     "request": {
                         "useSsl": True,
+                        "internalExperimentFlags": [],
                         "consistencyTokenJars": [
                             {
-                                "encryptedTokenJarContents": "AKreu9vGJvh9GzxuQ81FzAo70zR1kbtoBwBMwnjJXKluHq-ghNDdhhskWwkQjns-W5tj2RU2kk2Ldgc48MkIU6LXwPJUheySf0waSizGkY8tXeeS34t07Q9JVJbO9s6s1KR8elNgoCEG6-LMkhbx4a4d"
+                                "encryptedTokenJarContents": "AKreu9vuVhZ7mgLYAgw5EPwRRJJnTlPZAO1Ys7Prjz4G9HY8jUdk_IOUl0nUHIJ7bx2GdRVNw-rYtcmyykEzZCxLgl7pqyuhv4S4IPZT_BGv5f6TvRseba_X7vJDXfUXaVuEHrYS9rPUaMZMNQehHo0E"
                             }
                         ],
-                        "internalExperimentFlags": [],
                     },
-                    "clientScreenNonce": "zYFx0JyL5kImjtZD",
+                    "clientScreenNonce": "tMpnFFxwzgdGO0tf",
                     "adSignalsInfo": {
                         "params": [
-                            {"key": "dt", "value": "1752277495708"},
+                            {"key": "dt", "value": "1754093936479"},
                             {"key": "flash", "value": "0"},
                             {"key": "frm", "value": "0"},
                             {"key": "u_tz", "value": "120"},
@@ -74,11 +74,11 @@ def yt_music_cover(ytb_url: str) -> str:
                             {"key": "u_aw", "value": "1600"},
                             {"key": "u_cd", "value": "24"},
                             {"key": "bc", "value": "31"},
-                            {"key": "bih", "value": "617"},
-                            {"key": "biw", "value": "1349"},
+                            {"key": "bih", "value": "525"},
+                            {"key": "biw", "value": "1600"},
                             {
                                 "key": "brdim",
-                                "value": "0,0,0,0,1600,0,1600,1156,1349,617",
+                                "value": "0,0,0,0,1600,0,1600,1156,1600,525",
                             },
                             {"key": "vis", "value": "1"},
                             {"key": "wgl", "value": "true"},
@@ -86,15 +86,15 @@ def yt_music_cover(ytb_url: str) -> str:
                         ]
                     },
                     "clickTracking": {
-                        "clickTrackingParams": "CP8DEMjeAiITCLKIk6z-tY4DFYfuSQcdgekAjw=="
+                        "clickTrackingParams": "CJ0FEMn0AhgDIhMI59m3ju3qjgMV1NBJBx2XnShZ"
                     },
                 },
                 "playbackContext": {
                     "contentPlaybackContext": {
                         "html5Preference": "HTML5_PREF_WANTS",
-                        "lactMilliseconds": "29",
+                        "lactMilliseconds": "35",
                         "referer": "https://music.youtube.com/",
-                        "signatureTimestamp": 20278,
+                        "signatureTimestamp": 20299,
                         "autonavState": "STATE_OFF",
                         "autoCaptionsDefaultOn": False,
                         "mdxContext": {},
@@ -105,14 +105,12 @@ def yt_music_cover(ytb_url: str) -> str:
                         "supportXhr": True,
                     },
                 },
-                "cpn": "s5r09cveqj9AF0hT",
-                "playlistId": "RDAMVMeeMC0SG2cnA",
+                "cpn": "0lhBxSpnzJZiKM6i",
+                "playlistId": "RDAMVMsWcLccMuCA8",
                 "captionParams": {},
-                "serviceIntegrityDimensions": {
-                    "poToken": "MlsTL8zoXUnQHhMXgcKyJpn8uF3kIpkEvmPiIDvX6cXsAaQKrIdaNyEZ9dw4IpS6i_6d7Htuu7Rv2sEmPpFGYnLIgN68z5D0KUtUKqe2JrbeFaNi_4FoCs4Ul76M"
-                },
             },
-        ).json()["videoDetails"]["thumbnail"]["thumbnails"][-1]["url"]
+        ).json()
+        return raw["videoDetails"]["thumbnail"]["thumbnails"][-1]["url"]
     except Exception as exc:
         traceback.print_exception(exc)
         return f"https://img.youtube.com/vi/{ytid}/0.jpg"
