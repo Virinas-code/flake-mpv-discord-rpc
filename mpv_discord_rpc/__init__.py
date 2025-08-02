@@ -9,7 +9,7 @@ from typing import Type
 
 from websockets.asyncio.client import ClientConnection, connect
 
-from .covers import bandcamp_music_cover, yt_music_cover
+from .covers import bandcamp_music_cover, soundcloud_cover, yt_music_cover
 
 
 class MpvDiscordRpc:
@@ -91,6 +91,8 @@ class MpvDiscordRpc:
             return yt_music_cover(self.url)
         elif "bandcamp" in self.url:
             return bandcamp_music_cover(self.url)
+        elif "soundcloud" in self.url:
+            return soundcloud_cover(self.url)
         else:
             return None
 
@@ -177,13 +179,16 @@ class MpvDiscordRpc:
             activity_data["args"]["pid"] = self.pid
         if self.url:
             activity_data["args"]["activity"]["url"] = self.url
+            platform: str = "online"
+            if "youtube" in self.url:
+                platform = "on YouTube"
+            elif "bandcamp" in self.url:
+                platform = "on Bandcamp"
+            elif "soundcloud" in self.url:
+                platform = "on Soundcloud"
             buttons.append(
                 {
-                    "label": (
-                        "Listen on YouTube"
-                        if "youtube" in self.url
-                        else "Listen online"
-                    ),
+                    "label": f"Listen {platform}",
                     "url": self.url,
                 }
             )

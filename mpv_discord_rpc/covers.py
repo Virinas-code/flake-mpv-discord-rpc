@@ -22,8 +22,29 @@ class MyHTMLParser(HTMLParser):
             self.cover = attrs_dict["href"]
 
 
+class SoundcloudScraper(HTMLParser):
+    def __init__(self, *, convert_charrefs: bool = True) -> None:
+        super().__init__(convert_charrefs=convert_charrefs)
+        self.cover: str | None = None
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]):
+        if tag != "meta":
+            return
+
+        attrs_dict: dict[str, str | None] = dict(attrs)
+
+        if attrs_dict.get("property", "") == "og:image":
+            self.cover = attrs_dict.get("content", None)
+
+
 def bandcamp_music_cover(url: str) -> str | None:
     parser = MyHTMLParser()
+    parser.feed(requests.get(url).text)
+    return parser.cover
+
+
+def soundcloud_cover(url: str) -> str | None:
+    parser = SoundcloudScraper()
     parser.feed(requests.get(url).text)
     return parser.cover
 
