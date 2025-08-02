@@ -39,7 +39,8 @@ class MpvDiscordRpc:
         self._requests: int = 0
         """Total requests count, increased every request"""
         self._first_run: bool = False
-        self._was_paused: bool = False
+        self._reload: bool = False
+        self._updated: bool = False
 
     async def mainloop(self) -> None:
         if not self._first_run:
@@ -49,14 +50,18 @@ class MpvDiscordRpc:
             start_time: float = time.time()
             """Time where this tick was started"""
             self.test_paused()
-            if self._was_paused:
+            if self._reload:
+                print("# Reloading!")
                 self.update_mpv()
-                self._was_paused = False
-            ready: list[socket.socket] = select.select([self._socket], [], [], 5)[0]
-            if ready:
-                self.handle_event()
+                self._reload = False
+            if not self._updated:
+                ready: list[socket.socket] = select.select([self._socket], [], [], 5)[0]
+                if ready:
+                    self.handle_event()
+            else:
+                self._updated = False
             await self.update_discord()
-            time.sleep(max((start_time + 10 - time.time(), 0)))
+            time.sleep(max((start_time + 5 - time.time(), 0)))
 
     def handle_event(self) -> None:
         events: list[bytes] = self._socket.recv(4096).split(b"\n")
@@ -64,7 +69,7 @@ class MpvDiscordRpc:
             if raw:
                 data: dict = json.loads(raw)
                 print("->", data)
-                if "event" in data and data["event"] == "audio-reconfig":
+                if "event" in data and data["event"] == "file-loaded":
                     self.update_mpv()
 
     def update_mpv(self) -> None:
@@ -82,10 +87,11 @@ class MpvDiscordRpc:
         self.cover = self.get_cover()
         self.album = self.mpv_request("metadata/by-key/Album", str)
         self.version = self.mpv_request("mpv-version", str)
+        self._updated = True
 
     def test_paused(self) -> None:
         if self.paused:
-            self._was_paused = True
+            self._reload = True
         self.paused = self.mpv_request("core-idle", bool) or False
 
     def get_cover(self) -> str | None:
@@ -122,6 +128,8 @@ class MpvDiscordRpc:
                 if "request_id" in data:
                     request_id = data["request_id"]
                     break
+                elif "event" in data and data["event"] == "file-loaded":
+                    self._reload = True
         if "error" in data and data["error"] != "success":
             return None
         self._requests += 1
