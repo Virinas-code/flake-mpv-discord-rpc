@@ -119,7 +119,7 @@ class MpvDiscordRpc:
                     request_id = data["request_id"]
                     break
                 elif "event" in data and data["event"] == "file-loaded":
-                    self._reload = True
+                    self.update_mpv()
         if "error" in data and data["error"] != "success":
             return None
         self._requests += 1
