@@ -52,10 +52,10 @@ class MpvDiscordRpc:
             if self._was_paused:
                 self.update_mpv()
                 self._was_paused = False
-            await self.update_discord()
             ready: list[socket.socket] = select.select([self._socket], [], [], 5)[0]
             if ready:
                 self.handle_event()
+            await self.update_discord()
             time.sleep(max((start_time + 10 - time.time(), 0)))
 
     def handle_event(self) -> None:
@@ -106,7 +106,7 @@ class MpvDiscordRpc:
             )
             + "\n"
         ).encode()
-        print("<-", payload)
+        print("<=", payload)
         self._socket.send(payload)
         request_id: int = -1
         data: dict = {"data": None}
@@ -116,7 +116,7 @@ class MpvDiscordRpc:
                 if not event:
                     continue
                 data = json.loads(event)
-                print("->", data)
+                print("=>", data)
                 if "request_id" in data:
                     request_id = data["request_id"]
                     break
