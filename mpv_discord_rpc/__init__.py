@@ -119,6 +119,7 @@ class MpvDiscordRpc:
                 print("->", data)
                 if "request_id" in data:
                     request_id = data["request_id"]
+                    break
         if "error" in data and data["error"] != "success":
             return None
         self._requests += 1
