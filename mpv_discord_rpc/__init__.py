@@ -9,7 +9,7 @@ from typing import Type
 
 from websockets.asyncio.client import ClientConnection, connect
 
-from .yt_music_cover import bandcamp_music_cover, yt_music_cover
+from .covers import bandcamp_music_cover, yt_music_cover
 
 
 class MpvDiscordRpc:
