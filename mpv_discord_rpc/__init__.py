@@ -39,27 +39,20 @@ class MpvDiscordRpc:
         self._requests: int = 0
         """Total requests count, increased every request"""
         self._first_run: bool = False
-        self._reload: bool = False
-        self._updated: bool = False
 
     async def mainloop(self) -> None:
         if not self._first_run:
+            self.test_paused()
             self.update_mpv()
             self._first_run = True
         while True:
             start_time: float = time.time()
             """Time where this tick was started"""
+            ready: list[socket.socket] = select.select([self._socket], [], [], 5)[0]
+            if ready:
+                self.handle_event()
             self.test_paused()
-            if self._reload:
-                print("# Reloading!")
-                self.update_mpv()
-                self._reload = False
-            if not self._updated:
-                ready: list[socket.socket] = select.select([self._socket], [], [], 5)[0]
-                if ready:
-                    self.handle_event()
-            else:
-                self._updated = False
+            self.update_mpv()
             await self.update_discord()
             time.sleep(max((start_time + 5 - time.time(), 0)))
 
@@ -87,11 +80,8 @@ class MpvDiscordRpc:
         self.cover = self.get_cover()
         self.album = self.mpv_request("metadata/by-key/Album", str)
         self.version = self.mpv_request("mpv-version", str)
-        self._updated = True
 
     def test_paused(self) -> None:
-        if self.paused:
-            self._reload = True
         self.paused = self.mpv_request("core-idle", bool) or False
 
     def get_cover(self) -> str | None:
