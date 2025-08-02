@@ -9,7 +9,7 @@ from typing import Type
 
 from websockets.asyncio.client import ClientConnection, connect
 
-from .yt_music_cover import yt_music_cover
+from .yt_music_cover import bandcamp_music_cover, yt_music_cover
 
 
 class MpvDiscordRpc:
@@ -93,6 +93,8 @@ class MpvDiscordRpc:
             return None
         elif "youtube" in self.url:
             return yt_music_cover(self.url)
+        elif "bandcamp" in self.url:
+            return bandcamp_music_cover(self.url)
         else:
             return None
 

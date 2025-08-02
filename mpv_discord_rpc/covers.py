@@ -1,6 +1,38 @@
 import traceback
+from html.parser import HTMLParser
 
 import requests
+
+
+class MyHTMLParser(HTMLParser):
+    def __init__(self, *, convert_charrefs: bool = True) -> None:
+        super().__init__(convert_charrefs=convert_charrefs)
+        self.cover: str | None = None
+        self.is_cover_img: bool = False
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]):
+        print("Encountered a start tag:", tag)
+        attrs_dict: dict[str, str | None] = {}
+        for attr in attrs:
+            attrs_dict[attr[0]] = attr[1]
+        if (
+            tag == "a"
+            and attrs_dict.get("class", "") == "popupImage"
+            and "https://f4.bcbits.com/img/a" in (attrs_dict.get("href", "") or "")
+        ):
+            self.cover = attrs_dict["href"]
+
+    def handle_endtag(self, tag):
+        print("Encountered an end tag :", tag)
+
+    def handle_data(self, data):
+        print("Encountered some data  :", data)
+
+
+def bandcamp_music_cover(url: str) -> str | None:
+    parser = MyHTMLParser()
+    parser.feed(requests.get(url).text)
+    return parser.cover
 
 
 def yt_music_cover(ytb_url: str) -> str:
