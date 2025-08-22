@@ -3,13 +3,22 @@ import json
 import secrets
 import select
 import socket
+import subprocess
+import sys
 import time
 import uuid
-from typing import Type
+from pathlib import Path
+from typing import Final, Type
 
 from websockets.asyncio.client import ClientConnection, connect
 
 from .covers import bandcamp_music_cover, soundcloud_cover, yt_music_cover
+
+# Formula : duration * percentage / 100, returns seconds
+# Use ffmpeg -ss <x> -i input -frames:v 1 output.png
+
+THUMBNAIL_SEEK: Final[float] = 20 / 100
+THUMBNAIL_PATH: Final[Path] = Path("~/Pictures/mpv.png").expanduser().absolute()
 
 
 class MpvDiscordRpc:
@@ -31,6 +40,7 @@ class MpvDiscordRpc:
         self.album: str | None = None
         self.version: str | None = None
         self.paused: bool = False
+        self.music: bool = False
 
         self._websocket: ClientConnection = websocket
         self._socket: socket.socket = sock
@@ -80,6 +90,61 @@ class MpvDiscordRpc:
         self.cover = self.get_cover()
         self.album = self.mpv_request("metadata/by-key/Album", str)
         self.version = self.mpv_request("mpv-version", str)
+        static_image: bool | None = self.mpv_request("current-tracks/video/image", bool)
+        if static_image is None:
+            # No image at all: forced to be music
+            self.music = True
+        else:
+            self.music = static_image  # Music if static, video otherwise
+        print(f"{self.music=}")
+
+        self.update_thumbnail()
+
+    def update_thumbnail(self) -> None:
+        if self.music:
+            # Music has a static image / no video
+            return
+
+        path: str | None = self.mpv_request("path", str)
+        if not path:
+            return
+
+        duration: float = (
+            float(
+                subprocess.check_output(
+                    [
+                        "ffprobe",
+                        "-v",
+                        "error",
+                        "-show_entries",
+                        "format=duration",
+                        "-of",
+                        "default=noprint_wrappers=1:nokey=1",
+                        path,
+                    ]
+                )[:-1].decode()
+            )
+            * THUMBNAIL_SEEK
+        )
+        command: list[str] = [
+            "ffmpeg",
+            "-y",
+            "-ss",
+            str(duration),
+            "-i",
+            path,
+            "-frames:v",
+            "1",
+            "-update",
+            "1",
+            str(THUMBNAIL_PATH),
+        ]
+        print(command)
+        subprocess.run(
+            command,
+            stdout=sys.stdout,
+            stderr=sys.stderr,
+        )
 
     def test_paused(self) -> None:
         self.paused = self.mpv_request("core-idle", bool) or False
@@ -119,13 +184,14 @@ class MpvDiscordRpc:
                 print("=>", data)
                 if "request_id" in data:
                     request_id = data["request_id"]
-                    break
                 elif "event" in data and data["event"] == "file-loaded":
                     self.update_mpv()
         if "error" in data and data["error"] != "success":
             return None
         self._requests += 1
-        assert isinstance(data["data"], expected_type)
+        assert isinstance(data["data"], expected_type), (
+            f"{data['data']} type was {type(data['data'])} instead of expected {expected_type}"
+        )
         return data["data"]
 
     @classmethod
@@ -144,7 +210,7 @@ class MpvDiscordRpc:
             "args": {
                 "activity": {
                     "name": "mpv",
-                    "type": 2,  # 2
+                    "type": 2 if self.music else 3,  # 2 - Listening / 3 - Watching
                     "created_at": self._created_at,
                     "timestamps": {},
                     "application_id": "1393273649016082472",
@@ -207,8 +273,13 @@ class MpvDiscordRpc:
                 self.playlist_current,
                 self.playlist_count,
             ]
-        if self.cover:
-            activity_data["args"]["activity"]["assets"]["large_image"] = self.cover
+        if self.music:
+            if self.cover:
+                activity_data["args"]["activity"]["assets"]["large_image"] = self.cover
+        else:
+            activity_data["args"]["activity"]["assets"]["large_image"] = (
+                "https://undfnd.duckdns.org/public.php/dav/files/mpv/"
+            )
         if self.album:
             activity_data["args"]["activity"]["assets"]["large_text"] = self.album
         if self.version:
