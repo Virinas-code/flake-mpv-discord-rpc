@@ -1,25 +1,21 @@
-[tool.poetry]
-name = "mpv-discord-rpc"
-version = "0.1.0"
-description = "Discord Rich Presence from mpv's JSON IPC"
-authors = ["Virinas-code <alexcode228@gmail.com>"]
-# readme = "README.md"
-# license = "BSD"
-packages = [
-  { include = "mpv_discord_rpc" }
+[project]
+name = "mpv_discord_rpc"
+version = "1.0.0"
+description = "Discord Rich Presence using MPV's JSON IPC"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "urllib3>=2.2.3",
 ]
 
-[tool.poetry.dependencies]
-python = "^3.10"
-websockets = "^15.0.1"
-requests = "^2.32.4"
-
-[project]
-name = "mpv-discord-rpc"
-
 [project.scripts]
-mpv_discord_rpc = 'mpv_discord_rpc:main'
+mpv_discord_rpc = "mpv_discord_rpc:main"
 
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = [
+    "ruff>=0.12.10",
+]
