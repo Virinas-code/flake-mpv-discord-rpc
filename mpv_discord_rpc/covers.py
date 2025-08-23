@@ -3,6 +3,8 @@ from html.parser import HTMLParser
 
 import requests
 
+print("fml")
+
 
 class MyHTMLParser(HTMLParser):
     def __init__(self, *, convert_charrefs: bool = True) -> None:
