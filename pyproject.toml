@@ -4,16 +4,13 @@ version = "1.0.0"
 description = "Discord Rich Presence using MPV's JSON IPC"
 readme = "README.md"
 requires-python = ">=3.13"
-dependencies = [
-    "urllib3>=2.2.3",
-]
 
 [project.scripts]
 mpv_discord_rpc = "mpv_discord_rpc:main"
 
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
 
 [dependency-groups]
 dev = [
