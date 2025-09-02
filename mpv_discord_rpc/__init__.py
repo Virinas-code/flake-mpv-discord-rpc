@@ -2,6 +2,7 @@ import asyncio
 import json
 import secrets
 import select
+import shutil
 import socket
 import subprocess
 import sys
@@ -11,8 +12,6 @@ from pathlib import Path
 from typing import Final, Type
 
 from websockets.asyncio.client import ClientConnection, connect
-
-from .covers import bandcamp_music_cover, soundcloud_cover, yt_music_cover
 
 # Formula : duration * percentage / 100, returns seconds
 # Use ffmpeg -ss <x> -i input -frames:v 1 output.png
@@ -52,6 +51,11 @@ class MpvDiscordRpc:
         self._requests: int = 0
         """Total requests count, increased every request"""
         self._first_run: bool = False
+        self._thumbnail_cache: dict[str, str] = {}
+        """Map between a file path and a thumbnail share link"""
+
+        shutil.rmtree(THUMBNAIL_FOLDER)
+        THUMBNAIL_FOLDER.mkdir()
 
     async def mainloop(self) -> None:
         if not self._first_run:
@@ -90,7 +94,6 @@ class MpvDiscordRpc:
         self.playlist = self.mpv_request("playlist-path", str)
         self.playlist_current = self.mpv_request("playlist-pos", int)
         self.playlist_count = self.mpv_request("playlist/count", int)
-        self.cover = self.get_cover()
         self.album = self.mpv_request("metadata/by-key/Album", str)
         self.version = self.mpv_request("mpv-version", str)
         static_image: bool | None = self.mpv_request("current-tracks/video/image", bool)
@@ -104,70 +107,75 @@ class MpvDiscordRpc:
         self.update_thumbnail()
 
     def update_thumbnail(self) -> None:
-        if self.music:
-            # Music has a static image / no video
-            return
-
         path: str | None = self.mpv_request("path", str)
         if not path:
+            self.cover = None
             return
 
-        duration: float = (
-            float(
-                subprocess.check_output(
-                    [
-                        "ffprobe",
-                        "-v",
-                        "error",
-                        "-show_entries",
-                        "format=duration",
-                        "-of",
-                        "default=noprint_wrappers=1:nokey=1",
-                        path,
-                    ]
-                )[:-1].decode()
-            )
-            * THUMBNAIL_SEEK
-        )
+        if path in self._thumbnail_cache:
+            self.cover = self._thumbnail_cache[path]
+            return
 
         thumbnail_id: str = str(uuid.uuid4())
         destination: Path = (THUMBNAIL_FOLDER / thumbnail_id).with_suffix(".png")
-        print(f"{destination=}")
 
-        command: list[str] = [
-            "ffmpeg",
-            "-y",
-            "-ss",
-            str(duration),
-            "-i",
-            path,
-            "-frames:v",
-            "1",
-            "-update",
-            "1",
-            str(destination),
-        ]
-        print(f"{command=}")
-        subprocess.run(
-            command,
-            stdout=sys.stdout,
-            stderr=sys.stderr,
-        )
+        if self.music:
+            # Music has a static image / no video
+            subprocess.run(
+                [
+                    "ffmpeg",
+                    "-y",
+                    "-dump_attachment:m:mimetype:image/webp",
+                    str(destination),
+                    "-i",
+                    path,
+                ],
+                check=False,
+            )
+        else:
+            duration: float = (
+                float(
+                    subprocess.check_output(
+                        [
+                            "ffprobe",
+                            "-v",
+                            "error",
+                            "-show_entries",
+                            "format=duration",
+                            "-of",
+                            "default=noprint_wrappers=1:nokey=1",
+                            path,
+                        ]
+                    )[:-1].decode()
+                )
+                * THUMBNAIL_SEEK
+            )
+
+            command: list[str] = [
+                "ffmpeg",
+                "-y",
+                "-ss",
+                str(duration),
+                "-i",
+                path,
+                "-frames:v",
+                "1",
+                "-update",
+                "1",
+                str(destination),
+            ]
+            subprocess.run(
+                command,
+                stdout=sys.stdout,
+                stderr=sys.stderr,
+            )
+
+        share: str = THUMBNAIL_SHARE.format(thumbnail_id=thumbnail_id)
+        self.cover = share
+        self._thumbnail_cache[path] = share
 
     def test_paused(self) -> None:
         self.paused = self.mpv_request("core-idle", bool) or False
-
-    def get_cover(self) -> str | None:
-        if self.url is None:
-            return None
-        elif "youtube" in self.url:
-            return yt_music_cover(self.url)
-        elif "bandcamp" in self.url:
-            return bandcamp_music_cover(self.url)
-        elif "soundcloud" in self.url:
-            return soundcloud_cover(self.url)
-        else:
-            return None
 
     def mpv_request[V](self, field: str, expected_type: Type[V]) -> V | None:
         payload: bytes = (
@@ -281,13 +289,8 @@ class MpvDiscordRpc:
                 self.playlist_current,
                 self.playlist_count,
             ]
-        if self.music:
-            if self.cover:
-                activity_data["args"]["activity"]["assets"]["large_image"] = self.cover
-        else:
-            activity_data["args"]["activity"]["assets"]["large_image"] = (
-                "https://undfnd.duckdns.org/public.php/dav/files/mpv/"
-            )
+        if self.cover:
+            activity_data["args"]["activity"]["assets"]["large_image"] = self.cover
         if self.album:
             activity_data["args"]["activity"]["assets"]["large_text"] = self.album
         if self.version:
