@@ -33,6 +33,7 @@
             dependencies = with pkgs.python3Packages; [
               websockets
               requests
+              numpy
             ];
 
             meta = {
@@ -46,12 +47,19 @@
         }
       );
 
-      apps = forAllSystems (system: {
-        default = {
-          type = "app";
-          program = "${self.packages.${system}.default}/bin/mpv_discord_rpc";
-        };
-      });
+      apps = forAllSystems (
+        system:
+        let
+          pkgs = import nixpkgs { inherit system; };
+          inherit (pkgs) lib; # stdenv
+          pyproject = lib.trivial.importTOML ./pyproject.toml;
+          pyprojectScripts = builtins.mapAttrs (name: value: {
+            type = "app";
+            program = "${self.packages.${system}.default}/bin/${name}";
+          }) pyproject.project.scripts;
+        in
+        lib.recursiveUpdate pyprojectScripts { default = pyprojectScripts.mpv_discord_rpc; }
+      );
 
       formatter = forAllSystems (
         system:

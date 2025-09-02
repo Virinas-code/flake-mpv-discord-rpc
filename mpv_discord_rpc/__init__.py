@@ -18,7 +18,10 @@ from .covers import bandcamp_music_cover, soundcloud_cover, yt_music_cover
 # Use ffmpeg -ss <x> -i input -frames:v 1 output.png
 
 THUMBNAIL_SEEK: Final[float] = 20 / 100
-THUMBNAIL_PATH: Final[Path] = Path("~/Pictures/mpv.png").expanduser().absolute()
+THUMBNAIL_FOLDER: Final[Path] = Path("~/Public/mpv-thumbnails").expanduser().absolute()
+THUMBNAIL_SHARE: Final[str] = (
+    "https://undfnd.duckdns.org/public.php/dav/files/mpv-thumbnails/{thumbnail_id}.png"
+)
 
 
 class MpvDiscordRpc:
@@ -126,6 +129,11 @@ class MpvDiscordRpc:
             )
             * THUMBNAIL_SEEK
         )
+
+        thumbnail_id: str = str(uuid.uuid4())
+        destination: Path = (THUMBNAIL_FOLDER / thumbnail_id).with_suffix(".png")
+        print(f"{destination=}")
+
         command: list[str] = [
             "ffmpeg",
             "-y",
@@ -137,9 +145,9 @@ class MpvDiscordRpc:
             "1",
             "-update",
             "1",
-            str(THUMBNAIL_PATH),
+            str(destination),
         ]
-        print(command)
+        print(f"{command=}")
         subprocess.run(
             command,
             stdout=sys.stdout,
